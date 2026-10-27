@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements-dev.txt
+      - run: pytest
+      - name: Build the sample parts list end to end
+        run: |
+          python examples/make_sample_schematic.py
+          python -m eskd_bom build examples/sample_schematic.dxf -o sample_PE3.dxf \
+            --code "АБВГ.468157.001ПЭ3" --title "Блок управления вентилятором" --preview sample_PE3.png
+      - uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.12'
+        with:
+          name: sample-parts-list
+          path: |
+            sample_PE3.dxf
+            sample_PE3.png
